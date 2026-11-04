@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QR 인쇄 · 우리 반 도서관</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A4; margin: 10mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; color: #1b2a4a; background: #e9eef5; }
+    .bar { position: sticky; top: 0; background: #1b2a4a; color: #fff; padding: 12px 20px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; z-index: 2; }
+    .bar b { font-size: 16px; }
+    .bar select, .bar button { font: inherit; padding: 6px 12px; border-radius: 8px; border: 0; }
+    .bar button { background: #ffc93c; font-weight: 700; cursor: pointer; }
+    .bar .hint { font-size: 13px; color: #c8d5ea; }
+    .sheet { width: 210mm; margin: 16px auto; background: #fff; padding: 10mm; box-shadow: 0 4px 20px rgba(0,0,0,.12); display: grid; align-content: start; }
+    .item { border: 0.3mm dashed #9aa8c0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden; break-inside: avoid; }
+    .item svg { display: block; }
+    /* 학생 카드: 3 x 4 */
+    .students { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 66mm; }
+    .students .item { padding: 4mm; gap: 2mm; }
+    .students .name { font-family: 'Jua', sans-serif; font-size: 20pt; line-height: 1.1; }
+    .students .num { font-size: 10pt; color: #52607d; }
+    .students .item svg { width: 38mm; height: 38mm; }
+    .students .foot { font-size: 7.5pt; color: #52607d; }
+    .students .stripe { width: 100%; height: 3mm; background: repeating-linear-gradient(90deg, #ffc93c 0 12mm, #6cc79a 12mm 24mm, #b59ae0 24mm 36mm, #8fb5ee 36mm 48mm); margin-bottom: 1mm; }
+    /* 책 라벨 크게: 3 x 7 */
+    .copies.large { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 38mm; }
+    .copies.large .item { flex-direction: row; gap: 3mm; padding: 2mm 3mm; justify-content: flex-start; text-align: left; }
+    .copies.large .item svg { width: 32mm; height: 32mm; flex: none; }
+    .copies.large .title { font-size: 9pt; line-height: 1.25; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+    .copies.large .code { font-size: 9pt; margin-top: 1mm; }
+    /* 책 라벨 작게: 4 x 10 */
+    .copies.small { grid-template-columns: repeat(4, 1fr); grid-auto-rows: 27.7mm; }
+    .copies.small .item { flex-direction: row; gap: 1.5mm; padding: 1.5mm; justify-content: flex-start; text-align: left; }
+    .copies.small .item svg { width: 23mm; height: 23mm; flex: none; }
+    .copies.small .title { font-size: 7pt; line-height: 1.2; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+    .copies.small .code { font-size: 7pt; margin-top: .5mm; }
+    .empty { padding: 40px; text-align: center; }
+    @media print {
+      body { background: #fff; }
+      .bar { display: none; }
+      .sheet { margin: 0; padding: 0; box-shadow: none; width: auto; page-break-after: always; }
+      .sheet:last-child { page-break-after: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <b id="ttl">QR 인쇄</b>
+    <label id="sizebox" hidden>라벨 크기 <select id="size"><option value="large">크게 (한 장 21개)</option><option value="small">작게 (한 장 40개)</option></select></label>
+    <button onclick="window.print()">인쇄 / PDF로 저장</button>
+    <span class="hint">인쇄 창에서 대상을 「PDF로 저장」으로 고르면 PDF 파일로 받을 수 있어요. 배율은 「기본(100%)」, 여백은 「기본」으로 두세요.</span>
+  </div>
+  <div id="pages"></div>
+  <script type="module">
+    import { qrSvg } from '/js/qr.js';
+    import { api, esc } from '/js/common.js';
+    const p = new URLSearchParams(location.search);
+    const type = p.get('type') === 'copies' ? 'copies' : 'students';
+    const pages = document.getElementById('pages');
+    const sizeSel = document.getElementById('size');
+    let rows = [];
+    try {
+      const qs = new URLSearchParams();
+      if (p.get('ids')) qs.set('ids', p.get('ids'));
+      if (p.get('books')) qs.set('books', p.get('books'));
+      rows = await api('GET', `/api/admin/print/${type}?${qs}`);
+    } catch (e) {
+      pages.innerHTML = `<div class="empty">${esc(e.status === 401 ? '선생님 화면에서 로그인한 뒤 다시 열어 주세요.' : e.message)}</div>`;
+    }
+    document.getElementById('ttl').textContent = type === 'students' ? `학생 QR 카드 ${rows.length}장` : `책 QR 라벨 ${rows.length}개`;
+    document.getElementById('sizebox').hidden = type !== 'copies';
+    function render() {
+      if (!rows.length) { pages.innerHTML ||= '<div class="empty">인쇄할 항목이 없어요.</div>'; return; }
+      const size = sizeSel.value;
+      const per = type === 'students' ? 12 : size === 'large' ? 21 : 40;
+      const cls = type === 'students' ? 'students' : `copies ${size}`;
+      let html = '';
+      for (let i = 0; i < rows.length; i += per) {
+        html += `<section class="sheet ${cls}">` + rows.slice(i, i + per).map(r => type === 'students'
+          ? `<div class="item"><div class="stripe"></div><div class="num">${r.number ? r.number + '번' : ''}</div><div class="name">${esc(r.name)}</div>${qrSvg(r.qr_token, { margin: 2 })}<div class="foot">우리 반 도서관 · 나만 쓰는 카드예요</div></div>`
+          : `<div class="item">${qrSvg(r.qr_token, { margin: 2 })}<div><div class="title">${esc(r.title)}</div><div class="code">${esc(r.copy_code)}</div></div></div>`).join('') + '</section>';
+      }
+      pages.innerHTML = html;
+    }
+    sizeSel.addEventListener('change', render);
+    render();
+  </script>
+</body>
+</html>
