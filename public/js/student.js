@@ -493,6 +493,7 @@ async function loadPublicBooks() {
       <div class="stall">
         ${cover2(b)}
         <span class="badge-pill ${b.on_shelf ? 'avail' : 'out'}">${b.on_shelf ? '대출 가능' : '대출 중'}</span>
+        <div class="shelf-plank"></div>
         <div class="ttl">${esc(b.title)}</div>
         ${b.author ? `<div class="by2">${esc(b.author)}</div>` : ''}
         <div class="mini-rating">${ratingLine(b, { empty: '후기 없음' })}</div>
