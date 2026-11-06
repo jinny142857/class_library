@@ -596,7 +596,7 @@ function bindIsbnLookup(scope) {
   };
   scope.querySelector('[data-act="isbn-lookup"]')?.addEventListener('click', lookup);
   scope.querySelector('[data-act="isbn-scan"]')?.addEventListener('click', async () => {
-    const code = await scanDialog('ISBN 바코드 스캔', '책 뒤표지의 ISBN 바코드(978로 시작)를 보여 주세요.');
+    const code = await scanDialog('ISBN 바코드 스캔', '책 뒤표지의 ISBN 바코드(978 또는 979로 시작)를 보여 주세요.');
     if (!code) return;
     form.querySelector('input[name=isbn]').value = code;
     lookup();
