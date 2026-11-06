@@ -53,11 +53,17 @@ input[type=text], input[type=search], input[type=password], input[type=number], 
   border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 10px; background: #fff; min-width: 0;
 }
 textarea { width: 100%; min-height: 140px; }
-label.f { display: grid; gap: 4px; font-size: 13px; color: var(--ink-soft); font-weight: 600; }
+label.f { display: grid; gap: 4px; font-size: 13px; color: var(--ink-soft); font-weight: 600; min-width: 0; }
 label.f input, label.f select, label.f textarea { color: var(--ink); font-weight: 400; font-size: 15px; }
 .form { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px 16px; }
 .form .wide { grid-column: 1 / -1; }
 .checkbox { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+/* 입력창+버튼 한 줄 조합: 좁은 화면에서 버튼이 겹치거나 잘리지 않도록 줄바꿈.
+   input은 최소 110px은 지키게 하고, 그 이하로 좁아지면 버튼이 다음 줄로 내려간다
+   (input을 0까지 줄게 두면 flex가 줄바꿈 대신 전부 욱여넣어 버튼이 잘려 보인다). */
+.row-field { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-width: 0; }
+.row-field input, .row-field select { flex: 1 1 110px; min-width: 110px; }
+.row-field button, .row-field a.btn { flex: 0 0 auto; }
 
 .card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; }
 .card h2 { margin: 0 0 12px; font-size: 17px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }

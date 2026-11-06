@@ -175,7 +175,7 @@ const PAGES = {
     shell('loans');
     const tabs = [['active', '대출 중'], ['overdue', '연체'], ['returned', '반납 완료'], ['late_returned', '늦게 반납'], ['all', '전체']];
     main.innerHTML = head('대출·반납', '예외 상황은 여기서 직접 처리하세요. 모든 변경은 사유와 함께 기록돼요.',
-      `<form data-act="search" style="display:flex;gap:6px"><input type="search" name="q" value="${esc(q)}" placeholder="학생·도서·코드 검색"><button class="btn">검색</button></form>
+      `<form data-act="search" class="row-field"><input type="search" name="q" value="${esc(q)}" placeholder="학생·도서·코드 검색"><button class="btn">검색</button></form>
        <button class="btn primary" data-act="counter">대신 대출·반납</button>`) + `
       <div class="tabs">${tabs.map(([k, t]) => `<button data-tab="${k}" class="${k === status ? 'on' : ''}">${t}</button>`).join('')}</div>
       <div class="card scroll">${rows.length ? `<table><tr><th>학생</th><th>도서</th><th>소장본</th><th>대출일</th><th>반납 예정</th><th>반납일</th><th class="num">연체</th><th>상태</th><th></th></tr>
@@ -224,7 +224,7 @@ const PAGES = {
     const rows = await api('GET', `/api/admin/books?q=${encodeURIComponent(q)}${inactive ? '&inactive=1' : ''}`);
     shell('books');
     main.innerHTML = head('도서', `${rows.length}종`,
-      `<form data-act="search" style="display:flex;gap:6px"><input type="search" name="q" value="${esc(q)}" placeholder="제목·저자·ISBN·분야"><button class="btn">검색</button></form>
+      `<form data-act="search" class="row-field"><input type="search" name="q" value="${esc(q)}" placeholder="제목·저자·ISBN·분야"><button class="btn">검색</button></form>
        <label class="checkbox"><input type="checkbox" data-act="inactive" ${inactive ? 'checked' : ''}>비활성 포함</label>
        <button class="btn" data-act="print-sel">선택 QR 인쇄</button>
        <button class="btn primary" data-act="new">도서 등록</button>`) + `
@@ -516,7 +516,7 @@ const PAGES = {
     const maxM = Math.max(1, ...s.monthly.map(m => m.loans));
     const totalCat = s.by_category.reduce((a, c) => a + c.loans, 0) || 1;
     main.innerHTML = head('통계', `학급 누적 대출 <b>${s.all_time}</b>건${from || to ? ` · 선택 기간 ${s.total}건` : ''}`,
-      `<form data-act="range" style="display:flex;gap:6px;align-items:center"><input type="date" name="from" value="${from}" aria-label="시작일"> ~ <input type="date" name="to" value="${to}" aria-label="종료일"><button class="btn">조회</button>${from || to ? '<a class="btn" href="#/stats">전체 기간</a>' : ''}</form>`) + `
+      `<form data-act="range" class="row-field"><input type="date" name="from" value="${from}" aria-label="시작일"> ~ <input type="date" name="to" value="${to}" aria-label="종료일"><button class="btn">조회</button>${from || to ? '<a class="btn" href="#/stats">전체 기간</a>' : ''}</form>`) + `
       <div class="card"><h2>월별 대출 건수</h2>
         ${s.monthly.length ? `<div class="cols">${s.monthly.map(m => `<div class="c"><span class="v">${m.loans}</span><span class="col" style="height:${(m.loans / maxM) * 140}px"></span></div>`).join('')}</div>
         <div class="cols-x">${s.monthly.map(m => `<span>${Number(m.month.slice(5))}월${m.month.slice(5) === '01' || m === s.monthly[0] ? `<br>${m.month.slice(0, 4)}` : ''}</span>`).join('')}</div>` : '<p class="empty">기록이 없어요.</p>'}
@@ -570,7 +570,7 @@ function describe(r) {
 // ───────────── 대화상자들 ─────────────
 function bookFields(b = {}, cats = []) {
   return `
-    <label class="f">ISBN<span style="display:flex;gap:6px"><input type="text" name="isbn" value="${esc(b.isbn || '')}" inputmode="numeric" style="flex:1"><button type="button" class="btn small" data-act="isbn-scan">스캔</button><button type="button" class="btn small" data-act="isbn-lookup">조회</button></span></label>
+    <label class="f">ISBN<span class="row-field"><input type="text" name="isbn" value="${esc(b.isbn || '')}" inputmode="numeric"><button type="button" class="btn small" data-act="isbn-scan">스캔</button><button type="button" class="btn small" data-act="isbn-lookup">조회</button></span></label>
     <label class="f">도서명<input type="text" name="title" required maxlength="200" value="${esc(b.title || '')}"></label>
     <label class="f">저자<input type="text" name="author" maxlength="200" value="${esc(b.author || '')}"></label>
     <label class="f">출판사<input type="text" name="publisher" maxlength="100" value="${esc(b.publisher || '')}"></label>
@@ -667,7 +667,7 @@ async function counterDialog() {
   const r = await dialog('대신 대출·반납', `
     <div class="form">
       <label class="f wide">학생<select name="student_id" required><option value="">학생 선택</option>${students.map(s => `<option value="${s.id}">${s.number ? s.number + '번 ' : ''}${esc(s.name)}${s.loans.length ? ` (대출 중: ${esc(s.loans[0].title)})` : ''}</option>`).join('')}</select></label>
-      <label class="f wide">책 (QR·바코드·소장본 코드)<span style="display:flex;gap:6px"><input type="text" name="code" required style="flex:1" placeholder="예: B0001-1"><button type="button" class="btn small" data-act="scan">스캔</button></span></label>
+      <label class="f wide">책 (QR·바코드·소장본 코드)<span class="row-field"><input type="text" name="code" required placeholder="예: B0001-1"><button type="button" class="btn small" data-act="scan">스캔</button></span></label>
     </div>
     <p class="note" style="margin-bottom:0">대출은 학생 화면과 똑같은 규칙(1인 1권, 예약 우선권, 이용 정지)으로 검사해요. 반납은 그 책을 빌린 학생으로 처리돼요.</p>`,
     [{ label: '닫기', value: null }, { label: '반납 처리', value: 'return' }, { label: '대출 처리', value: 'borrow', primary: true }], (d) => {
