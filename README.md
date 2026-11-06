@@ -37,9 +37,24 @@
 | 교실 태블릿 등 다른 기기에서 접속한다 | HTTPS 주소가 필요 |
 
 HTTPS로 여는 방법(택1):
-- **클라우드 배포**: Railway, Fly.io 등 Node.js를 지원하고 **영구 저장소(volume)** 를 붙일 수 있는 곳에 올리고 `DATA_DIR`을 그 저장소 경로로 지정합니다. (영구 저장소가 없는 무료 호스팅은 재시작 시 데이터가 사라지므로 쓰면 안 됩니다)
+- **클라우드 배포(추천)**: Railway, Fly.io 등 Node.js를 지원하고 **영구 저장소(volume)** 를 붙일 수 있는 곳에 올리고 `DATA_DIR`을 그 저장소 경로로 지정합니다. (영구 저장소가 없는 무료 호스팅은 재시작 시 데이터가 사라지므로 쓰면 안 됩니다) 아래 3-1에 Railway 기준 단계별 안내가 있습니다.
 - **교실 PC + 터널**: PC에서 서버를 실행하고 Cloudflare Tunnel 같은 도구로 https 주소를 만듭니다.
 - **인증서 직접 지정**: `TLS_CERT`, `TLS_KEY` 환경변수에 인증서 파일 경로를 주면 서버가 직접 https로 열립니다.
+
+### 3-1. Railway로 배포하기
+
+교실 PC를 계속 켜 둘 필요 없이, 작은 비용(또는 무료 체험)으로 24시간 켜진 서버를 둘 수 있습니다. 태블릿과 선생님 PC는 그냥 이 서버의 https 주소에 접속하는 "손님"이 됩니다.
+
+1. [railway.app](https://railway.app)에서 GitHub 계정으로 가입합니다.
+2. **New Project** → **Deploy from GitHub repo** → 이 저장소(`class_library`)를 선택합니다. (처음이면 Railway의 GitHub App에 저장소 접근 권한을 허용해야 합니다)
+3. 자동으로 Node.js 프로젝트로 인식되어 `npm start`로 빌드·실행됩니다(이 저장소의 `railway.json`에 설정돼 있음). 외부 패키지가 없어 빌드도 빠릅니다.
+4. **데이터가 재배포 시 사라지지 않도록 Volume을 반드시 추가**합니다: 서비스 → **Settings** → **Volumes** → **New Volume** → 마운트 경로를 `/data`로 지정합니다.
+5. **Variables**(환경변수) 탭에서 추가합니다:
+   - `DATA_DIR` = `/data` (4번에서 만든 볼륨 경로와 일치해야 합니다)
+   - `ADMIN_USERNAME`, `ADMIN_PASSWORD` (선택) — 지정하면 첫 배포 때 관리자 계정이 자동으로 만들어집니다. 비워 두면 배포 후 `/admin`에 처음 접속할 때 화면에서 만들 수 있습니다.
+6. **Settings** → **Networking** → **Generate Domain**을 눌러 공개 https 주소를 받습니다 (예: `class-library-production.up.railway.app`). Railway가 TLS(https)를 자동으로 처리하므로 `TLS_CERT`/`TLS_KEY`는 설정하지 않습니다.
+7. 배포가 끝나면 그 주소로 접속해 평소처럼 사용합니다. 태블릿은 `https://그주소/`, 선생님은 `https://그주소/admin`.
+8. 이후 `git push`로 코드를 올릴 때마다 Railway가 자동으로 재배포합니다. 데이터는 Volume에 남아 있으므로 책·학생·대출 기록은 그대로 유지됩니다.
 
 **스캔 방식** (자동으로 선택됨)
 1. 브라우저 내장 바코드 인식(BarcodeDetector) — Android 태블릿 Chrome, 크롬북 등
