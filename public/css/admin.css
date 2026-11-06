@@ -11,6 +11,12 @@
   font-weight: 700;
   font-display: swap;
 }
+@font-face {
+  font-family: 'Eommakkaturi';
+  src: url('https://gcore.jsdelivr.net/gh/projectnoonnu/noonfonts_13@1.0/Katuri.woff') format('woff');
+  font-weight: normal;
+  font-display: swap;
+}
 :root {
   --bg: #fbf2e3;
   --paper: #fffaf1;
@@ -26,7 +32,7 @@
   --wood: #b9854f;
   --wood-dark: #8a5a2f;
   --font: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
-  --display: 'ImHyeMin', 'Jua', 'Malgun Gothic', sans-serif;
+  --display: 'Eommakkaturi', 'ImHyeMin', 'Jua', 'Malgun Gothic', sans-serif;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -53,6 +59,16 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
 .head h1 { margin: 0; font-size: 24px; }
 .head .sub { color: var(--ink-soft); font-size: 14px; }
+
+.dash-head {
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  background: linear-gradient(135deg, #fff8ec, #ffe8cf); border: 1px solid var(--line);
+  border-radius: 16px; padding: 18px 22px; margin-bottom: 18px;
+}
+.dash-mascot { width: 64px; height: 64px; flex: none; object-fit: cover; border-radius: 14px; border: 3px solid #fff; box-shadow: 0 3px 0 var(--line); }
+.dash-head-text { flex: 1 1 220px; min-width: 0; }
+.dash-head h1 { margin: 0; font-size: 23px; }
+.dash-head .sub { color: var(--ink-soft); font-size: 14px; margin-top: 2px; }
 .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 .btn { border: 1px solid var(--line-strong); background: var(--paper); border-radius: 8px; padding: 7px 14px; cursor: pointer; font-weight: 600; white-space: nowrap; }
@@ -88,6 +104,7 @@ label.f input, label.f select, label.f textarea { color: var(--ink); font-weight
 .figures { display: grid; grid-template-columns: repeat(6, 1fr); background: var(--paper); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 18px; overflow: hidden; }
 .figures div { padding: 14px 18px; border-left: 1px solid var(--line); }
 .figures div:first-child { border-left: 0; }
+.figures .fi { display: block; font-size: 20px; margin-bottom: 2px; }
 .figures b { display: block; font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .figures span { font-size: 13px; color: var(--ink-soft); }
 .figures .alert b { color: var(--stamp); }

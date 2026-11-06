@@ -18,6 +18,12 @@
   font-weight: 700;
   font-display: swap;
 }
+@font-face {
+  font-family: 'Eommakkaturi';
+  src: url('https://gcore.jsdelivr.net/gh/projectnoonnu/noonfonts_13@1.0/Katuri.woff') format('woff');
+  font-weight: normal;
+  font-display: swap;
+}
 :root {
   --cream: #fbf2e3;     /* 따뜻한 크림색 배경 */
   --paper: #fffaf1;
@@ -32,7 +38,7 @@
   --wood: #b9854f;      /* 책꽂이 나무색 */
   --wood-dark: #8a5a2f;
   --radius: 18px;
-  --display: 'ImHyeMin', 'Jua', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  --display: 'Eommakkaturi', 'ImHyeMin', 'Jua', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
   --body: 'IsYun', 'Gaegu', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
 }
 * { box-sizing: border-box; }
@@ -70,16 +76,20 @@ button { font: inherit; color: inherit; cursor: pointer; }
 main { padding: 0 28px 28px; max-width: 1280px; margin: 0 auto; }
 .screen { animation: none; }
 
-/* ── 첫 화면: 책꽂이를 가장 먼저, 로그인은 상단 바로 ── */
+/* ── 첫 화면: 로고(마스코트)와 로그인을 상단에, 책꽂이는 바로 아래 ── */
 .landing-top {
-  display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
-  margin: 6px 0 28px;
+  display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+  background: linear-gradient(135deg, #fff8ec, #ffe8cf);
+  border: 3px solid var(--line); border-radius: 28px; padding: 22px 28px; margin: 6px 0 28px;
 }
-.hero-badge {
-  display: inline-flex; align-items: center; gap: 8px; background: var(--paper); border: 2px solid var(--line);
-  border-radius: 999px; padding: 6px 16px; font-size: 16px; margin-bottom: 8px; color: var(--ink-soft);
+.logo-mascot {
+  width: 92px; height: 92px; flex: none; object-fit: cover;
+  border-radius: 20px; border: 3px solid var(--paper); box-shadow: 0 5px 0 var(--line);
+  display: grid; place-items: center; background: var(--yellow); font-size: 34px;
 }
-.landing-top h1 { font-family: var(--display); font-weight: normal; font-size: 32px; line-height: 1.25; margin: 0; }
+.landing-top-text { flex: 1 1 260px; min-width: 0; }
+.landing-top h1 { font-family: var(--display); font-weight: normal; font-size: 30px; line-height: 1.25; margin: 0 0 4px; }
+.landing-top p { margin: 0; font-size: 18px; color: var(--ink-soft); }
 .btn.big {
   font-size: 24px; padding: 15px 30px; border-radius: 999px; border-width: 4px;
   box-shadow: 0 7px 0 var(--wood-dark); flex: none;
@@ -120,18 +130,6 @@ main { padding: 0 28px 28px; max-width: 1280px; margin: 0 auto; }
 .stall .ttl { font-size: 17px; text-align: center; line-height: 1.3; margin-top: 10px; max-width: 142px; }
 .stall .by2 { font-size: 13px; color: var(--ink-soft); text-align: center; }
 .bestseller .empty { padding: 20px 4px; }
-
-.landing-about {
-  display: flex; align-items: center; gap: 20px;
-  background: linear-gradient(135deg, #fff8ec, #ffe8cf);
-  border: 3px solid var(--line); border-radius: 28px; padding: 22px 28px; margin-bottom: 20px;
-}
-.hero-pic {
-  width: 84px; height: 84px; flex: none; object-fit: cover;
-  border-radius: 18px; border: 3px solid var(--paper); box-shadow: 0 4px 0 var(--line);
-  display: grid; place-items: center; background: var(--yellow); font-size: 30px;
-}
-.landing-about p { margin: 0; font-size: 19px; color: var(--ink-soft); }
 
 /* ── 별점 ── */
 .stars { letter-spacing: 1px; }
@@ -321,11 +319,9 @@ main { padding: 0 28px 28px; max-width: 1280px; margin: 0 auto; }
   .login, .task, .home, .mine-grid { grid-template-columns: 1fr; min-height: 0; gap: 24px; }
   .login h1 { font-size: 46px; }
   .task h1 { font-size: 40px; }
-  .landing-top { flex-direction: column; align-items: stretch; text-align: center; }
+  .landing-top { flex-direction: column; align-items: center; text-align: center; padding: 22px 20px; }
   .landing-top h1 { font-size: 26px; }
-  .hero-badge { margin: 0 auto 8px; }
   .btn.big { justify-content: center; }
-  .landing-about { flex-direction: column; text-align: center; padding: 20px; }
   .book-head { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .book-head .rating.big { justify-content: center; }
   .shelf { grid-template-columns: repeat(2, 1fr); align-items: stretch; border-bottom-width: 0; box-shadow: none; padding: 0; }

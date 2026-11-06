@@ -163,9 +163,10 @@ const VIEWS = {
     app.innerHTML = `
       <section class="screen landing">
         <div class="landing-top">
+          <img class="logo-mascot" src="/img/mascot.webp" alt="양배추 책방" data-fallback="🥬">
           <div class="landing-top-text">
-            <div class="hero-badge">📚 양배추 책방</div>
             <h1>오늘은 어떤 책을 만나볼까요?</h1>
+            <p>내 이름이 적힌 QR 카드만 있으면 혼자서도 책을 빌리고 반납할 수 있어요.</p>
           </div>
           <button class="btn primary big" data-act="login">${I.qr}QR 카드로 로그인하기</button>
         </div>
@@ -173,10 +174,6 @@ const VIEWS = {
           <h2>우리 반 책꽂이</h2>
           <p class="sub">지금 우리 반에 있는 책들이에요. 로그인하면 빌리거나 예약할 수 있어요.</p>
           <div class="table" id="landing-books"><p class="empty">책을 불러오는 중이에요…</p></div>
-        </div>
-        <div class="landing-about">
-          <img class="hero-pic" src="/img/mascot.webp" alt="양배추 책방 마스코트" data-fallback="🥬">
-          <p>내 이름이 적힌 QR 카드만 있으면<br>혼자서도 책을 빌리고 반납할 수 있어요.</p>
         </div>
       </section>`;
     app.querySelector('[data-act="login"]').addEventListener('click', () => go('login'));

@@ -141,15 +141,22 @@ const PAGES = {
     const d = await api('GET', '/api/admin/dashboard');
     overdueCount = d.overdue.length;
     shell('dashboard');
-    main.innerHTML = head('대시보드', `${fmtDate(d.today, { year: true })} · ${d.is_school_day ? '수업일' : '수업일 아님'}`,
-      '<button class="btn primary" data-act="counter">대신 대출·반납</button>') + `
+    main.innerHTML = `
+      <div class="dash-head">
+        <img class="dash-mascot" src="/img/mascot.webp" alt="" onerror="this.remove()">
+        <div class="dash-head-text">
+          <h1>${esc(me.name)} 선생님, 안녕하세요!</h1>
+          <div class="sub">${fmtDate(d.today, { year: true })} · ${d.is_school_day ? '수업일' : '수업일 아님'}</div>
+        </div>
+        <button class="btn primary" data-act="counter">대신 대출·반납</button>
+      </div>
       <div class="figures">
-        <div><b>${d.books_titles}</b><span>도서 (제목)</span></div>
-        <div><b>${d.books_copies}</b><span>소장본 (권)</span></div>
-        <div><b>${d.copies_available}</b><span>대출 가능</span></div>
-        <div><b>${d.copies_loaned}</b><span>대출 중</span></div>
-        <div class="${d.overdue.length ? 'alert' : ''}"><b>${d.overdue.length}</b><span>연체</span></div>
-        <div><b>${d.students}</b><span>학생</span></div>
+        <div><span class="fi">📚</span><b>${d.books_titles}</b><span>도서 (제목)</span></div>
+        <div><span class="fi">📦</span><b>${d.books_copies}</b><span>소장본 (권)</span></div>
+        <div><span class="fi">✅</span><b>${d.copies_available}</b><span>대출 가능</span></div>
+        <div><span class="fi">📖</span><b>${d.copies_loaned}</b><span>대출 중</span></div>
+        <div class="${d.overdue.length ? 'alert' : ''}"><span class="fi">⏰</span><b>${d.overdue.length}</b><span>연체</span></div>
+        <div><span class="fi">🧒</span><b>${d.students}</b><span>학생</span></div>
       </div>
       <div class="grid2">
         <div class="card"><h2>연체 도서 <a href="#/loans?status=overdue" style="font-size:13px">전체 보기</a></h2>
