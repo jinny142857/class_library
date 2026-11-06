@@ -498,7 +498,7 @@ async function loadPublicBooks() {
         <span class="badge-pill ${b.on_shelf ? 'avail' : 'out'}">${b.on_shelf ? '대출 가능' : '대출 중'}</span>
         <div class="ttl">${esc(b.title)}</div>
         ${b.author ? `<div class="by2">${esc(b.author)}</div>` : ''}
-        <div class="mini-rating">${ratingLine(b, { empty: '첫 후기를 기다려요' })}</div>
+        <div class="mini-rating">${ratingLine(b, { empty: '후기 없음' })}</div>
       </div>`).join('');
   } catch {
     box.innerHTML = '<p class="empty">책 목록을 불러오지 못했어요.</p>';

@@ -1,8 +1,14 @@
 /* 양배추 책방 — 교사용. 학생 화면과 같은 색 체계, 더 조용하고 촘촘하게. */
 @font-face {
-  font-family: 'IsYun';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2202-2@1.0/LeeSeoyun.woff') format('woff');
+  font-family: 'ImHyeMin';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2106@1.1/IM_Hyemin-Regular.woff2') format('woff');
   font-weight: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ImHyeMin';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2106@1.1/IM_Hyemin-Bold.woff2') format('woff');
+  font-weight: 700;
   font-display: swap;
 }
 :root {
@@ -20,7 +26,7 @@
   --wood: #b9854f;
   --wood-dark: #8a5a2f;
   --font: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
-  --display: 'IsYun', 'Jua', 'Malgun Gothic', sans-serif;
+  --display: 'ImHyeMin', 'Jua', 'Malgun Gothic', sans-serif;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }

@@ -32,8 +32,8 @@
   --wood: #b9854f;      /* 책꽂이 나무색 */
   --wood-dark: #8a5a2f;
   --radius: 18px;
-  --display: 'IsYun', 'Jua', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
-  --body: 'ImHyeMin', 'Gaegu', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  --display: 'ImHyeMin', 'Jua', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  --body: 'IsYun', 'Gaegu', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
@@ -143,7 +143,7 @@ main { padding: 0 28px 28px; max-width: 1280px; margin: 0 auto; }
 .rating.big { font-size: 20px; margin: 8px 0; }
 .rating.big .stars { font-size: 26px; }
 .mini-rating { margin-top: 4px; }
-.mini-rating .rating { justify-content: center; font-size: 13px; }
+.mini-rating .rating { justify-content: center; font-size: 13px; white-space: nowrap; }
 .mini-rating .stars { font-size: 15px; }
 .rating-link {
   display: flex; align-items: center; gap: 6px; font-size: 15px; color: var(--ink-soft);
