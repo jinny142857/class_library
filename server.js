@@ -121,18 +121,21 @@ route('POST', '/api/setup', null, async ({ body }) => {
   return { ok: true };
 });
 
-// 로그인 전 첫 화면에 보여줄 책꽂이 (개인정보 없이 제목·표지·대출 상태만)
+// 로그인 전 첫 화면에 보여줄 책꽂이 (개인정보 없이 제목·표지·대출 상태·별점만)
 route('GET', '/api/public/books', null, ({ ctx }) => {
   lib.refreshAll(ctx);
   const rows = db.prepare(`SELECT b.id, b.title, b.author, b.cover_image, b.category,
       (SELECT COUNT(*) FROM copies c WHERE c.book_id=b.id AND c.status='available') AS available,
       (SELECT COUNT(*) FROM copies c WHERE c.book_id=b.id AND c.status IN ('available','loaned','repair')) AS usable,
-      (SELECT COUNT(*) FROM reservations r WHERE r.book_id=b.id AND r.status='priority') AS held
+      (SELECT COUNT(*) FROM reservations r WHERE r.book_id=b.id AND r.status='priority') AS held,
+      (SELECT COUNT(*) FROM reviews rv WHERE rv.book_id=b.id) AS review_count,
+      (SELECT AVG(rating) FROM reviews rv WHERE rv.book_id=b.id) AS avg_rating
     FROM books b WHERE b.status='active'
     ORDER BY b.title LIMIT 60`).all();
   return rows.filter(b => b.usable > 0).map(b => ({
     id: b.id, title: b.title, author: b.author, cover_image: b.cover_image, category: b.category,
     on_shelf: b.available - b.held > 0,
+    review_count: b.review_count, avg_rating: b.review_count ? Math.round(b.avg_rating * 10) / 10 : null,
   }));
 });
 
@@ -177,13 +180,16 @@ route('GET', '/api/student/books', 'student', ({ actor, url, ctx }) => {
       (SELECT COUNT(*) FROM reservations r WHERE r.book_id=b.id AND r.status='priority') AS held,
       (SELECT COUNT(*) FROM reservations r WHERE r.book_id=b.id AND r.status IN ('waiting','priority')) AS queue,
       (SELECT r.id FROM reservations r WHERE r.book_id=b.id AND r.student_id=? AND r.status IN ('waiting','priority')) AS my_reservation,
-      (SELECT l.id FROM loans l JOIN copies c ON c.id=l.copy_id WHERE c.book_id=b.id AND l.student_id=? AND l.status='active') AS my_loan
+      (SELECT l.id FROM loans l JOIN copies c ON c.id=l.copy_id WHERE c.book_id=b.id AND l.student_id=? AND l.status='active') AS my_loan,
+      (SELECT COUNT(*) FROM reviews rv WHERE rv.book_id=b.id) AS review_count,
+      (SELECT AVG(rating) FROM reviews rv WHERE rv.book_id=b.id) AS avg_rating
     FROM books b WHERE b.status='active' AND (b.title LIKE ? OR IFNULL(b.author,'') LIKE ?)
     ORDER BY b.title LIMIT 60`).all(actor.id, actor.id, like, like);
   return rows.map(b => ({
     id: b.id, title: b.title, author: b.author, cover_image: b.cover_image, category: b.category,
     on_shelf: b.available - b.held > 0, queue: b.queue, usable: b.usable > 0,
     my_reservation: !!b.my_reservation, my_loan: !!b.my_loan,
+    review_count: b.review_count, avg_rating: b.review_count ? Math.round(b.avg_rating * 10) / 10 : null,
   }));
 });
 route('POST', '/api/student/reserve', 'student', ({ actor, ctx, body }) => {
@@ -197,6 +203,12 @@ route('POST', '/api/student/reserve', 'student', ({ actor, ctx, body }) => {
 });
 route('POST', '/api/student/reservations/:id/cancel', 'student', ({ actor, ctx, params }) =>
   lib.cancelReservation(Number(params.id), ctx, { studentId: actor.id }));
+route('GET', '/api/student/books/:id', 'student', ({ actor, params, ctx }) => {
+  lib.refreshAll(ctx);
+  return lib.bookDetail(Number(params.id), actor.id);
+});
+route('POST', '/api/student/books/:id/review', 'student', ({ actor, params, body, ctx }) =>
+  lib.rateBook(actor.id, Number(params.id), body.rating, body.comment, ctx));
 
 // ── 관리자 ──
 route('POST', '/api/admin/login', null, ({ req, res, body }) => {

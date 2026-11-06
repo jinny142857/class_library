@@ -306,9 +306,58 @@ export class Library {
 
   history(studentId, limit = 100) {
     return this.db.prepare(`SELECT l.id, l.loan_date, l.final_due_date AS due_date, l.return_date, l.overdue_school_days, l.status, l.extension_count,
-        b.title, b.author, c.copy_code
+        b.id AS book_id, b.title, b.author, c.copy_code
       FROM loans l JOIN copies c ON c.id=l.copy_id JOIN books b ON b.id=c.book_id
       WHERE l.student_id=? ORDER BY l.loaned_at DESC LIMIT ?`).all(studentId, limit);
+  }
+
+  // ───────────── 책 후기(별점·한줄평) ─────────────
+  reviewSummary(bookId) {
+    const row = this.db.prepare('SELECT COUNT(*) c, AVG(rating) a FROM reviews WHERE book_id=?').get(bookId);
+    return { review_count: row.c, avg_rating: row.c ? Math.round(row.a * 10) / 10 : null };
+  }
+
+  canReview(studentId, bookId) {
+    return !!this.db.prepare('SELECT 1 FROM loans l JOIN copies c ON c.id=l.copy_id WHERE l.student_id=? AND c.book_id=? LIMIT 1')
+      .get(studentId, bookId);
+  }
+
+  bookDetail(bookId, studentId) {
+    const book = this.db.prepare('SELECT id, title, author, publisher, category, cover_image FROM books WHERE id=? AND status=\'active\'').get(bookId);
+    if (!book) throw new LibError('UNKNOWN_BOOK', '등록되지 않은 책이에요.');
+    const available = this.availableCount(bookId);
+    const held = this.db.prepare("SELECT COUNT(*) c FROM reservations WHERE book_id=? AND status='priority'").get(bookId).c;
+    const reviews = this.db.prepare(`SELECT r.rating, r.comment, r.created_at, s.name AS student_name
+      FROM reviews r JOIN students s ON s.id=r.student_id WHERE r.book_id=? ORDER BY r.created_at DESC LIMIT 50`).all(bookId);
+    const my_review = studentId
+      ? this.db.prepare('SELECT rating, comment FROM reviews WHERE book_id=? AND student_id=?').get(bookId, studentId) || null
+      : null;
+    return {
+      ...book, on_shelf: available - held > 0,
+      ...this.reviewSummary(bookId), reviews,
+      can_review: studentId ? this.canReview(studentId, bookId) : false, my_review,
+    };
+  }
+
+  rateBook(studentId, bookId, rating, comment, ctx) {
+    rating = Number(rating);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new LibError('BAD_RATING', '별점은 1~5점으로 매겨 주세요.');
+    comment = String(comment || '').trim().slice(0, 300);
+    const book = this.db.prepare('SELECT id FROM books WHERE id=? AND status=\'active\'').get(bookId);
+    if (!book) throw new LibError('UNKNOWN_BOOK', '등록되지 않은 책이에요.');
+    if (!this.canReview(studentId, bookId)) throw new LibError('CANNOT_REVIEW', '빌려서 읽어 본 책에만 후기를 남길 수 있어요.');
+    return tx(this.db, () => {
+      const now = ctx?.now || nowISO();
+      const existing = this.db.prepare('SELECT id FROM reviews WHERE book_id=? AND student_id=?').get(bookId, studentId);
+      if (existing) {
+        this.db.prepare('UPDATE reviews SET rating=?, comment=?, updated_at=? WHERE id=?').run(rating, comment, now, existing.id);
+      } else {
+        this.db.prepare('INSERT INTO reviews(book_id, student_id, rating, comment, created_at, updated_at) VALUES (?,?,?,?,?,?)')
+          .run(bookId, studentId, rating, comment, now, now);
+      }
+      audit(this.db, ctx?.actor, 'rate_book', 'book', bookId, { rating, has_comment: !!comment });
+      return { ok: true, rating, comment, ...this.reviewSummary(bookId) };
+    });
   }
 
   // ───────────── 관리자 조치 ─────────────

@@ -134,6 +134,19 @@ CREATE TABLE IF NOT EXISTS sessions (
   last_seen_at TEXT NOT NULL
 );
 
+-- 학생이 (빌려 본 적 있는) 책에 남기는 별점·한줄평
+CREATE TABLE IF NOT EXISTS reviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  book_id INTEGER NOT NULL REFERENCES books(id),
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  comment TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_reviews_student_book ON reviews(student_id, book_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_book ON reviews(book_id);
+
 CREATE TABLE IF NOT EXISTS audit_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   actor_type TEXT NOT NULL CHECK (actor_type IN ('student','admin','system')),

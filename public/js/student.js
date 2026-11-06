@@ -135,6 +135,16 @@ function cover2(b) {
   return `<div class="cover2" aria-hidden="true">${letter}</div>`;
 }
 
+function starsHtml(n) {
+  n = Math.round(n || 0);
+  return `<span class="stars" aria-hidden="true">${Array.from({ length: 5 }, (_, i) => `<span class="${i < n ? 'on' : ''}">★</span>`).join('')}</span>`;
+}
+
+function ratingLine(b, { empty = '아직 후기가 없어요' } = {}) {
+  if (b.avg_rating == null) return `<span class="cnt">${empty}</span>`;
+  return `${starsHtml(b.avg_rating)}<b>${b.avg_rating}</b><span class="cnt">(${b.review_count})</span>`;
+}
+
 // 표지 이미지가 깨지면 브라우저 기본 아이콘 대신 글자 플레이스홀더로 바꾼다 (img는 error가 버블링되지 않아 capture 사용)
 document.addEventListener('error', (e) => {
   const img = e.target;
@@ -152,19 +162,21 @@ const VIEWS = {
     who.classList.add('hidden');
     app.innerHTML = `
       <section class="screen landing">
-        <div class="landing-hero">
-          <div>
+        <div class="landing-top">
+          <div class="landing-top-text">
             <div class="hero-badge">📚 양배추 책방</div>
-            <h1>오늘은 어떤 책을<br>만나볼까요?</h1>
-            <p>내 이름이 적힌 QR 카드만 있으면<br>혼자서도 책을 빌리고 반납할 수 있어요.</p>
-            <button class="btn primary big" data-act="login">${I.qr}QR 카드로 로그인하기</button>
+            <h1>오늘은 어떤 책을 만나볼까요?</h1>
           </div>
-          <img class="hero-pic" src="/img/mascot.webp" alt="양배추 책방 마스코트" data-fallback="🥬">
+          <button class="btn primary big" data-act="login">${I.qr}QR 카드로 로그인하기</button>
         </div>
         <div class="bestseller">
           <h2>우리 반 책꽂이</h2>
           <p class="sub">지금 우리 반에 있는 책들이에요. 로그인하면 빌리거나 예약할 수 있어요.</p>
           <div class="table" id="landing-books"><p class="empty">책을 불러오는 중이에요…</p></div>
+        </div>
+        <div class="landing-about">
+          <img class="hero-pic" src="/img/mascot.webp" alt="양배추 책방 마스코트" data-fallback="🥬">
+          <p>내 이름이 적힌 QR 카드만 있으면<br>혼자서도 책을 빌리고 반납할 수 있어요.</p>
         </div>
       </section>`;
     app.querySelector('[data-act="login"]').addEventListener('click', () => go('login'));
@@ -229,6 +241,7 @@ const VIEWS = {
             : loan.school_days_left === 0 ? '<strong>오늘까지 반납해요.</strong>' : `반납까지 학교 오는 날로 <strong>${loan.school_days_left}일</strong> 남았어요.`}</p>
           ${loan.can_extend ? `<button class="btn small" data-act="extend" data-id="${loan.id}">반납일 미루기 (연장)</button>`
             : loan.extend_block && !loan.overdue_days ? `<p class="empty" style="font-size:18px">${esc(loan.extend_block.message)}</p>` : ''}
+          <button class="btn small" data-review="${loan.book_id}">★ 후기 쓰기</button>
         </div>
       </div>` : `<p class="empty">지금 빌린 책이 없어요. 「책 빌리기」를 눌러 읽고 싶은 책을 빌려 보세요.</p>`;
 
@@ -251,6 +264,7 @@ const VIEWS = {
       </section>`;
     app.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
     app.querySelector('[data-act="extend"]')?.addEventListener('click', (e) => go('extend', Number(e.currentTarget.dataset.id)));
+    app.querySelector('[data-review]')?.addEventListener('click', (e) => go('book', { id: Number(e.currentTarget.dataset.review), back: 'home' }));
     onScan = async () => toast('먼저 할 일을 골라 주세요. (책 빌리기 / 책 반납하기)');
   },
 
@@ -346,11 +360,13 @@ const VIEWS = {
             ${me.suspension_until ? `<div class="notice bad">${I.warn}<div><b>${fmtDate(me.suspension_until)}까지 쉬는 기간</b>그다음 학교 오는 날부터 다시 빌릴 수 있어요.</div></div>` : ''}
           </div>
           <div class="panel"><h2>지금까지 읽은 책 ${past.length}권</h2>
-            ${past.length ? `<ul class="hist">${past.map(h => `<li><span class="t">${esc(h.title)}${h.overdue_school_days ? `<span class="tag late">${h.overdue_school_days}일 늦음</span>` : ''}</span><span class="d">${fmtDate(h.loan_date)} ~ ${fmtDate(h.return_date)}</span></li>`).join('')}</ul>` : '<p class="empty">아직 반납한 책이 없어요. 첫 책을 빌려 볼까요?</p>'}
+            ${past.length ? `<ul class="hist">${past.map(h => `<li><span class="t">${esc(h.title)}${h.overdue_school_days ? `<span class="tag late">${h.overdue_school_days}일 늦음</span>` : ''}</span><span class="d">${fmtDate(h.loan_date)} ~ ${fmtDate(h.return_date)}</span><button class="btn small" data-review="${h.book_id}">★ 후기 쓰기</button></li>`).join('')}</ul>` : '<p class="empty">아직 반납한 책이 없어요. 첫 책을 빌려 볼까요?</p>'}
           </div>
         </div>
       </section>`;
     app.querySelector('[data-act="home"]').addEventListener('click', () => go('home'));
+    app.querySelectorAll('[data-review]').forEach(b => b.addEventListener('click', () =>
+      go('book', { id: Number(b.dataset.review), back: 'mine' })));
     app.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', async () => {
       if (!confirmInline(b)) return;
       try {
@@ -359,6 +375,68 @@ const VIEWS = {
         go('mine');
       } catch (e) { if (!onApiError(e)) toast(e.message); }
     }));
+  },
+
+  async book(opts) {
+    const back = opts?.back || 'home';
+    let d;
+    try { d = await api('GET', `/api/student/books/${opts.id}`); }
+    catch (e) {
+      if (onApiError(e)) return;
+      app.innerHTML = `<section class="screen"><button class="btn small back" data-act="back">← 뒤로</button><p class="empty">${esc(e.message)}</p></section>`;
+      app.querySelector('[data-act="back"]').addEventListener('click', () => go(back));
+      return;
+    }
+    const reviewsHtml = d.reviews.length ? `<ul class="reviews">${d.reviews.map(r => `
+      <li class="review">
+        <div class="rv-head">${starsHtml(r.rating)}<span class="rv-name">${esc(r.student_name)}</span></div>
+        ${r.comment ? `<p class="rv-text">${esc(r.comment)}</p>` : ''}
+      </li>`).join('')}</ul>` : '<p class="empty">아직 후기가 없어요. 첫 후기를 남겨 보세요!</p>';
+    app.innerHTML = `
+      <section class="screen book-detail">
+        <button class="btn small back" data-act="back">← 뒤로</button>
+        <div class="panel book-head">
+          ${cover2(d)}
+          <div>
+            <h1>${esc(d.title)}</h1>
+            ${d.author ? `<div class="by">${esc(d.author)}</div>` : ''}
+            <div class="rating big">${ratingLine(d, { empty: '아직 별점이 없어요' })}</div>
+            <span class="badge-pill ${d.on_shelf ? 'avail' : 'out'}">${d.on_shelf ? '대출 가능' : '대출 중'}</span>
+          </div>
+        </div>
+        ${d.can_review ? `
+        <div class="panel">
+          <h2>${d.my_review ? '내 후기 고치기' : '후기 남기기'}</h2>
+          <form data-act="review" class="review-form">
+            <div class="star-pick">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="star-btn${(d.my_review?.rating || 0) >= n ? ' on' : ''}" data-val="${n}" aria-label="${n}점">★</button>`).join('')}</div>
+            <input type="hidden" name="rating" value="${d.my_review?.rating || 0}">
+            <textarea name="comment" maxlength="300" placeholder="어떤 점이 좋았는지 짧게 남겨 주세요 (선택)">${esc(d.my_review?.comment || '')}</textarea>
+            <button class="btn primary" type="submit">${d.my_review ? '수정하기' : '후기 남기기'}</button>
+          </form>
+        </div>` : `<div class="note">이 책을 빌려서 읽어 본 뒤에 후기를 남길 수 있어요.</div>`}
+        <div class="panel">
+          <h2>친구들 후기${d.review_count ? ` ${d.review_count}개` : ''}</h2>
+          ${reviewsHtml}
+        </div>
+      </section>`;
+    app.querySelector('[data-act="back"]').addEventListener('click', () => go(back));
+    const starPick = app.querySelector('.star-pick');
+    const ratingInput = app.querySelector('input[name=rating]');
+    starPick?.querySelectorAll('.star-btn').forEach(btn => btn.addEventListener('click', () => {
+      const val = Number(btn.dataset.val);
+      ratingInput.value = val;
+      starPick.querySelectorAll('.star-btn').forEach(b => b.classList.toggle('on', Number(b.dataset.val) <= val));
+    }));
+    app.querySelector('[data-act="review"]')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const rating = Number(ratingInput.value);
+      if (!rating) { toast('별점을 먼저 골라 주세요.'); return; }
+      try {
+        await api('POST', `/api/student/books/${d.id}/review`, { rating, comment: e.target.comment.value });
+        toast('후기를 남겨 줘서 고마워요!');
+        go('book', opts);
+      } catch (err) { if (!onApiError(err)) toast(err.message); }
+    });
   },
 };
 
@@ -388,7 +466,9 @@ async function loadBooks(q) {
         state = `<span class="state off">${I.out}다른 친구가 읽는 중${b.queue ? ` · ${b.queue}명 기다려요` : ''}</span>`;
         action = `<button class="btn small" data-reserve="${b.id}" ${me.can_reserve ? '' : 'disabled'}>예약하기</button>`;
       }
-      return `<article class="bookrow">${cover(b)}<div><h3>${esc(b.title)}</h3>${b.author ? `<div class="by">${esc(b.author)}</div>` : ''}<div>${state}</div>${action}</div></article>`;
+      return `<article class="bookrow">${cover(b)}<div><h3>${esc(b.title)}</h3>${b.author ? `<div class="by">${esc(b.author)}</div>` : ''}<div>${state}</div>
+        <button type="button" class="rating-link" data-review="${b.id}">${ratingLine(b, { empty: '후기 보기·남기기' })}</button>
+        ${action}</div></article>`;
     }).join('');
     box.querySelectorAll('[data-reserve]').forEach(btn => btn.addEventListener('click', async () => {
       try {
@@ -399,6 +479,8 @@ async function loadBooks(q) {
         result(false, '예약하지 못했어요', e.message, e.hint);
       }
     }));
+    box.querySelectorAll('[data-review]').forEach(btn => btn.addEventListener('click', () =>
+      go('book', { id: Number(btn.dataset.review), back: 'reserve' })));
   } catch (e) {
     if (!onApiError(e)) box.innerHTML = `<p class="empty">${esc(e.message)}</p>`;
   }
@@ -416,6 +498,7 @@ async function loadPublicBooks() {
         <span class="badge-pill ${b.on_shelf ? 'avail' : 'out'}">${b.on_shelf ? '대출 가능' : '대출 중'}</span>
         <div class="ttl">${esc(b.title)}</div>
         ${b.author ? `<div class="by2">${esc(b.author)}</div>` : ''}
+        <div class="mini-rating">${ratingLine(b, { empty: '첫 후기를 기다려요' })}</div>
       </div>`).join('');
   } catch {
     box.innerHTML = '<p class="empty">책 목록을 불러오지 못했어요.</p>';

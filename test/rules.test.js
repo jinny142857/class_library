@@ -246,3 +246,42 @@ test('감사 로그 기록', () => {
   assert.ok(actions.includes('admin_create_student'));
   assert.ok(actions.includes('admin_create_book'));
 });
+
+test('책 후기: 빌려 본 책만 별점·한줄평 작성, 수정은 덮어쓰기', () => {
+  const { lib, st, book, sctx } = setup();
+  const a = st('가람'); const b = st('나래'); const bk = book('해리');
+  // 빌린 적 없으면 후기 불가
+  throwsCode(() => lib.rateBook(a.id, bk.book.id, 5, '재밌어요', sctx(a, '2026-11-04')), 'CANNOT_REVIEW');
+  let detail = lib.bookDetail(bk.book.id, a.id);
+  assert.equal(detail.can_review, false);
+  assert.equal(detail.review_count, 0);
+  assert.equal(detail.avg_rating, null);
+
+  lib.borrow(a.id, bk.copies[0].qr_token, sctx(a, '2026-11-04'));
+  throwsCode(() => lib.rateBook(a.id, bk.book.id, 0, '', sctx(a, '2026-11-04')), 'BAD_RATING');
+  throwsCode(() => lib.rateBook(a.id, bk.book.id, 6, '', sctx(a, '2026-11-04')), 'BAD_RATING');
+  lib.rateBook(a.id, bk.book.id, 5, '  정말 재밌어요  ', sctx(a, '2026-11-04'));
+
+  detail = lib.bookDetail(bk.book.id, a.id);
+  assert.equal(detail.can_review, true);
+  assert.equal(detail.review_count, 1);
+  assert.equal(detail.avg_rating, 5);
+  assert.equal(detail.my_review.comment, '정말 재밌어요'); // 앞뒤 공백 제거
+  assert.equal(detail.reviews[0].student_name, '가람');
+
+  // 같은 학생이 다시 남기면 새 행이 아니라 기존 후기를 수정
+  lib.rateBook(a.id, bk.book.id, 3, '다시 보니 보통이에요', sctx(a, '2026-11-05'));
+  detail = lib.bookDetail(bk.book.id, a.id);
+  assert.equal(detail.review_count, 1);
+  assert.equal(detail.avg_rating, 3);
+
+  // 다른 학생이 빌리지 않고는 못 씀. 빌리면 평균에 반영된다
+  throwsCode(() => lib.rateBook(b.id, bk.book.id, 4, '', sctx(b, '2026-11-05')), 'CANNOT_REVIEW');
+  lib.returnBook(a.id, bk.copies[0].qr_token, sctx(a, '2026-11-09'));
+  lib.borrow(b.id, bk.copies[0].qr_token, sctx(b, '2026-11-09'));
+  lib.rateBook(b.id, bk.book.id, 4, '', sctx(b, '2026-11-09'));
+  detail = lib.bookDetail(bk.book.id, b.id);
+  assert.equal(detail.review_count, 2);
+  assert.equal(detail.avg_rating, 3.5);
+  assert.equal(detail.my_review.rating, 4);
+});
