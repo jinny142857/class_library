@@ -19,7 +19,6 @@ const I = {
   shelf: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6l4 4 8-8" transform="translate(0 4)" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>',
   out: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 6v4l3 2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
   qr: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="4" y="4" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="3"/><rect x="8" y="8" width="4" height="4" fill="currentColor"/><rect x="24" y="4" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="3"/><rect x="28" y="8" width="4" height="4" fill="currentColor"/><rect x="4" y="24" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="3"/><rect x="8" y="28" width="4" height="4" fill="currentColor"/><rect x="24" y="24" width="7" height="7" fill="currentColor"/><rect x="33" y="24" width="3" height="3" fill="currentColor"/><rect x="24" y="33" width="3" height="3" fill="currentColor"/><rect x="29" y="29" width="7" height="7" fill="currentColor"/></svg>',
-  pic: '<svg viewBox="0 0 220 180" aria-hidden="true"><ellipse cx="110" cy="166" rx="92" ry="10" fill="#5b3a29" opacity=".12"/><g><rect x="18" y="70" width="44" height="90" rx="4" fill="#f5b942" stroke="#5b3a29" stroke-width="4" transform="rotate(-8 40 115)"/><rect x="66" y="52" width="46" height="108" rx="4" fill="#dd8fa6" stroke="#5b3a29" stroke-width="4" transform="rotate(-2 89 106)"/><rect x="112" y="60" width="46" height="100" rx="4" fill="#8bab5c" stroke="#5b3a29" stroke-width="4" transform="rotate(4 135 110)"/><rect x="156" y="78" width="44" height="82" rx="4" fill="#e3934f" stroke="#5b3a29" stroke-width="4" transform="rotate(9 178 119)"/></g><circle cx="110" cy="30" r="20" fill="#fff8ec" stroke="#5b3a29" stroke-width="4"/><path d="M101 30c0-6 4-10 9-10s9 4 9 10-4 9-9 9-9-3-9-9z" fill="none"/><path d="M103 26q7-6 14 0" stroke="#5b3a29" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="104" cy="29" r="2" fill="#5b3a29"/><circle cx="116" cy="29" r="2" fill="#5b3a29"/></svg>',
 };
 
 let me = null;          // 현재 학생 상태
@@ -155,12 +154,12 @@ const VIEWS = {
       <section class="screen landing">
         <div class="landing-hero">
           <div>
-            <div class="hero-badge">📚 우리 반 도서관</div>
+            <div class="hero-badge">📚 양배추 책방</div>
             <h1>오늘은 어떤 책을<br>만나볼까요?</h1>
             <p>내 이름이 적힌 QR 카드만 있으면<br>혼자서도 책을 빌리고 반납할 수 있어요.</p>
             <button class="btn primary big" data-act="login">${I.qr}QR 카드로 로그인하기</button>
           </div>
-          <div class="hero-pic">${I.pic}</div>
+          <img class="hero-pic" src="/img/mascot.webp" alt="양배추 책방 마스코트" data-fallback="🥬">
         </div>
         <div class="bestseller">
           <h2>우리 반 책꽂이</h2>

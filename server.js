@@ -1,4 +1,4 @@
-// 우리 반 도서관 서버. 외부 패키지 없이 Node.js(22.13 이상) 내장 기능만 사용한다.
+// 양배추 책방 서버. 외부 패키지 없이 Node.js(22.13 이상) 내장 기능만 사용한다.
 //   실행: node server.js        (기본 포트 3000)
 //   환경변수: PORT, DATA_DIR, TLS_CERT/TLS_KEY(HTTPS 직접 제공 시), NL_API_KEY, KAKAO_REST_API_KEY, HOLIDAY_API_KEY
 import http from 'node:http';
@@ -361,7 +361,7 @@ route('POST', '/api/admin/restore', 'admin', async ({ req, ctx }) => {
     const tables = t.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r => r.name);
     t.close();
     for (const need of ['students', 'books', 'copies', 'loans', 'reservations']) {
-      if (!tables.includes(need)) throw new HttpError(400, '우리 반 도서관 백업 파일이 아닙니다.');
+      if (!tables.includes(need)) throw new HttpError(400, '양배추 책방 백업 파일이 아닙니다.');
     }
   } catch (e) {
     fs.rmSync(tmp, { force: true });
@@ -472,7 +472,7 @@ if (process.env.TLS_CERT && process.env.TLS_KEY) {
 }
 server.listen(PORT, () => {
   const proto = process.env.TLS_CERT ? 'https' : 'http';
-  console.log(`우리 반 도서관 실행 중: ${proto}://localhost:${PORT}  (교사용: ${proto}://localhost:${PORT}/admin)`);
+  console.log(`양배추 책방 실행 중: ${proto}://localhost:${PORT}  (교사용: ${proto}://localhost:${PORT}/admin)`);
   console.log(`데이터 파일: ${DB_FILE}`);
 });
 

@@ -1,7 +1,7 @@
 {
   "name": "class-library",
   "version": "1.0.0",
-  "description": "우리 반 도서관 - 초등 학급문고 대출·반납·예약 웹앱 (외부 패키지 없음)",
+  "description": "양배추 책방 - 초등 학급문고 대출·반납·예약 웹앱 (외부 패키지 없음)",
   "type": "module",
   "private": true,
   "engines": {

@@ -1,4 +1,4 @@
-/* 우리 반 도서관 — 학생용 키오스크
+/* 양배추 책방 — 학생용 키오스크
    주제: 따뜻한 동네 책방. 메인 메뉴는 책등, 반납일은 대출 도장. 나머지는 조용하게. */
 :root {
   --cream: #fbf2e3;     /* 따뜻한 크림색 배경 */
@@ -70,8 +70,11 @@ main { padding: 0 28px 28px; max-width: 1280px; margin: 0 auto; }
 }
 .btn.big svg { width: 32px; height: 32px; }
 .btn.big:active:not(:disabled) { transform: translateY(5px); box-shadow: 0 2px 0 var(--wood-dark); }
-.hero-pic { justify-self: center; width: min(100%, 280px); }
-.hero-pic svg { width: 100%; height: auto; }
+.hero-pic {
+  justify-self: center; width: min(100%, 280px); aspect-ratio: 1; object-fit: cover;
+  border-radius: 24px; border: 4px solid var(--paper); box-shadow: 0 6px 0 var(--line);
+  display: grid; place-items: center; background: var(--yellow); font-size: 72px;
+}
 
 .bestseller { margin-bottom: 10px; }
 .bestseller h2 { font-family: var(--display); font-weight: normal; font-size: 32px; margin: 0 0 4px; }
@@ -196,9 +199,9 @@ main { padding: 0 28px 28px; max-width: 1280px; margin: 0 auto; }
 .spine:active:not(:disabled) { transform: translateY(-10px); }
 .spine:disabled { filter: grayscale(.7); opacity: .55; cursor: not-allowed; }
 .spine.borrow { background: var(--yellow); height: 360px; }
-.spine.return { background: #6cc79a; height: 330px; }
-.spine.reserve { background: #b59ae0; height: 345px; }
-.spine.mine { background: #8fb5ee; height: 315px; }
+.spine.return { background: var(--green); height: 330px; }
+.spine.reserve { background: var(--plum); height: 345px; }
+.spine.mine { background: var(--blue); height: 315px; }
 .spine .sub { font-family: var(--body); font-size: 17px; }
 
 /* ── 스캔·결과 ── */
@@ -226,7 +229,7 @@ main { padding: 0 28px 28px; max-width: 1280px; margin: 0 auto; }
 .state { display: inline-flex; align-items: center; gap: 6px; font-size: 17px; margin: 6px 0 8px; }
 .state svg { width: 20px; height: 20px; }
 .state.on { color: #17704a; }
-.state.off { color: #7a4fb5; }
+.state.off { color: var(--plum); }
 .state.na { color: var(--ink-soft); }
 
 /* ── 나의 도서관 ── */

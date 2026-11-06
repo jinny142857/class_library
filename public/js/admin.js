@@ -109,9 +109,9 @@ let overdueCount = 0;
 function shell(active) {
   if (!root.querySelector('.layout')) {
     root.innerHTML = `<div class="layout"><aside class="side">
-      <div class="logo"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="4" y="8" width="8" height="26" rx="1.5" fill="#ffc93c"/><rect x="13" y="5" width="8" height="29" rx="1.5" fill="#6cc79a"/><rect x="22" y="10" width="8" height="24" rx="1.5" transform="rotate(-12 26 22)" fill="#b59ae0"/><path d="M2 35h36" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>우리 반 도서관</div>
+      <div class="logo"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="4" y="8" width="8" height="26" rx="1.5" fill="#f5b942"/><rect x="13" y="5" width="8" height="29" rx="1.5" fill="#8bab5c"/><rect x="22" y="10" width="8" height="24" rx="1.5" transform="rotate(-12 26 22)" fill="#dd8fa6"/><path d="M2 35h36" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>양배추 책방</div>
       <nav></nav>
-      <div class="foot"><span id="me-name"></span><span id="today"></span><a href="/" target="_blank" style="color:#c8d5ea">학생 화면 열기</a><button id="logout">로그아웃</button></div>
+      <div class="foot"><span id="me-name"></span><span id="today"></span><a href="/" target="_blank" style="color:#e3cfb0">학생 화면 열기</a><button id="logout">로그아웃</button></div>
     </aside><main class="main" id="main"></main></div>`;
     root.querySelector('#logout').addEventListener('click', async () => { await api('POST', '/api/admin/logout').catch(() => {}); showLogin(); });
   }
@@ -429,7 +429,7 @@ const PAGES = {
             return `<button class="${cls}" data-date="${d.date}" aria-label="${fmtDate(d.date)} ${d.is_school_day ? '수업일' : '쉬는 날'} ${esc(why)}"><span class="n">${Number(d.date.slice(8))}</span><span class="why">${esc(why)}</span>${d.teacher && d.holiday ? `<span class="why muted">(${esc(d.holiday)})</span>` : ''}${dow === 0 || dow === 6 ? '' : ''}</button>`;
           }).join('')}
         </div>
-        <div class="legend"><span><i style="background:#fff"></i>수업일</span><span><i style="background:#f7eeee"></i>공휴일·휴업일</span><span><i style="background:#f3f4f7"></i>주말</span><span><i style="background:#fff;box-shadow:inset 0 0 0 2px #7a4fb5"></i>선생님이 지정</span></div>
+        <div class="legend"><span><i style="background:#fff"></i>수업일</span><span><i style="background:#f7eeee"></i>공휴일·휴업일</span><span><i style="background:#f3ecdd"></i>주말</span><span><i style="background:#fff;box-shadow:inset 0 0 0 2px #dd8fa6"></i>선생님이 지정</span></div>
       </div>
       <p class="note">공휴일은 2026~2027년 법정 공휴일·대체공휴일(노동절·제헌절 포함)이 미리 들어 있어요. ${settings.integrations.holiday ? '공공데이터포털 키가 설정되어 있어 「공휴일 동기화」로 최신 정보를 받을 수 있어요.' : '이후 연도는 날짜를 눌러 공휴일을 추가하거나, 서버에 HOLIDAY_API_KEY를 설정하면 자동으로 받을 수 있어요.'}</p>`;
     main.querySelectorAll('[data-date]').forEach(b => b.addEventListener('click', () => calendarDayDialog(days.find(d => d.date === b.dataset.date))));

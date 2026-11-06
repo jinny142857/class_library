@@ -3,30 +3,30 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>QR 인쇄 · 우리 반 도서관</title>
+  <title>QR 인쇄 · 양배추 책방</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
   <style>
     @page { size: A4; margin: 10mm; }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; color: #1b2a4a; background: #e9eef5; }
-    .bar { position: sticky; top: 0; background: #1b2a4a; color: #fff; padding: 12px 20px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; z-index: 2; }
+    body { margin: 0; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; color: #5b3a29; background: #fbf2e3; }
+    .bar { position: sticky; top: 0; background: #5b3a29; color: #fff; padding: 12px 20px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; z-index: 2; }
     .bar b { font-size: 16px; }
     .bar select, .bar button { font: inherit; padding: 6px 12px; border-radius: 8px; border: 0; }
-    .bar button { background: #ffc93c; font-weight: 700; cursor: pointer; }
-    .bar .hint { font-size: 13px; color: #c8d5ea; }
+    .bar button { background: #f5b942; font-weight: 700; cursor: pointer; }
+    .bar .hint { font-size: 13px; color: #e3cfb0; }
     .sheet { width: 210mm; margin: 16px auto; background: #fff; padding: 10mm; box-shadow: 0 4px 20px rgba(0,0,0,.12); display: grid; align-content: start; }
-    .item { border: 0.3mm dashed #9aa8c0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden; break-inside: avoid; }
+    .item { border: 0.3mm dashed #c2a87e; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden; break-inside: avoid; }
     .item svg { display: block; }
     /* 학생 카드: 3 x 4 */
     .students { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 66mm; }
     .students .item { padding: 4mm; gap: 2mm; }
     .students .name { font-family: 'Jua', sans-serif; font-size: 20pt; line-height: 1.1; }
-    .students .num { font-size: 10pt; color: #52607d; }
+    .students .num { font-size: 10pt; color: #93735b; }
     .students .item svg { width: 38mm; height: 38mm; }
-    .students .foot { font-size: 7.5pt; color: #52607d; }
-    .students .stripe { width: 100%; height: 3mm; background: repeating-linear-gradient(90deg, #ffc93c 0 12mm, #6cc79a 12mm 24mm, #b59ae0 24mm 36mm, #8fb5ee 36mm 48mm); margin-bottom: 1mm; }
+    .students .foot { font-size: 7.5pt; color: #93735b; }
+    .students .stripe { width: 100%; height: 3mm; background: repeating-linear-gradient(90deg, #f5b942 0 12mm, #8bab5c 12mm 24mm, #dd8fa6 24mm 36mm, #e3934f 36mm 48mm); margin-bottom: 1mm; }
     /* 책 라벨 크게: 3 x 7 */
     .copies.large { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 38mm; }
     .copies.large .item { flex-direction: row; gap: 3mm; padding: 2mm 3mm; justify-content: flex-start; text-align: left; }
@@ -82,7 +82,7 @@
       let html = '';
       for (let i = 0; i < rows.length; i += per) {
         html += `<section class="sheet ${cls}">` + rows.slice(i, i + per).map(r => type === 'students'
-          ? `<div class="item"><div class="stripe"></div><div class="num">${r.number ? r.number + '번' : ''}</div><div class="name">${esc(r.name)}</div>${qrSvg(r.qr_token, { margin: 2 })}<div class="foot">우리 반 도서관 · 나만 쓰는 카드예요</div></div>`
+          ? `<div class="item"><div class="stripe"></div><div class="num">${r.number ? r.number + '번' : ''}</div><div class="name">${esc(r.name)}</div>${qrSvg(r.qr_token, { margin: 2 })}<div class="foot">양배추 책방 · 나만 쓰는 카드예요</div></div>`
           : `<div class="item">${qrSvg(r.qr_token, { margin: 2 })}<div><div class="title">${esc(r.title)}</div><div class="code">${esc(r.copy_code)}</div></div></div>`).join('') + '</section>';
       }
       pages.innerHTML = html;
