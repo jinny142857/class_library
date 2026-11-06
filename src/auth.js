@@ -36,18 +36,20 @@ export class Sessions {
     const s = this.db.prepare('SELECT * FROM sessions WHERE token=? AND role=?').get(token, role);
     if (!s) return null;
     const idle = role === 'student' ? getSettings(this.db).student_idle_seconds : ADMIN_IDLE_SECONDS;
-    if (Date.now() - Date.parse(s.last_seen_at) > idle * 1000 + 15000) { // 15초 여유
+    // last_seen_at은 nowISO() 기준(FAKE_TODAY 반영)으로 저장되므로, 만료 판정도 같은 시계로 비교해야 한다
+    // (실제 Date.now()와 섞어 비교하면 FAKE_TODAY와 실제 날짜가 벌어졌을 때 세션이 바로 만료돼 버린다).
+    if (Date.parse(nowISO()) - Date.parse(s.last_seen_at) > idle * 1000 + 15000) { // 15초 여유
       this.destroy(token);
       return null;
     }
-    this.db.prepare('UPDATE sessions SET last_seen_at=? WHERE token=?').run(new Date().toISOString(), token);
+    this.db.prepare('UPDATE sessions SET last_seen_at=? WHERE token=?').run(nowISO(), token);
     return s;
   }
 
   destroy(token) { this.db.prepare('DELETE FROM sessions WHERE token=?').run(token); }
 
   cleanup() {
-    const cutoff = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const cutoff = new Date(Date.parse(nowISO()) - 24 * 3600 * 1000).toISOString();
     this.db.prepare('DELETE FROM sessions WHERE last_seen_at < ?').run(cutoff);
   }
 }

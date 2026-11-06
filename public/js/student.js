@@ -125,14 +125,27 @@ async function logout(expired) {
 document.getElementById('logout').addEventListener('click', () => logout());
 
 function cover(b) {
-  if (b.cover_image) return `<img class="cover" src="${esc(b.cover_image)}" alt="" referrerpolicy="no-referrer">`;
-  return `<div class="cover" aria-hidden="true">${esc((b.title || '?').trim()[0])}</div>`;
+  const letter = esc((b.title || '?').trim()[0] || '?');
+  if (b.cover_image) return `<img class="cover" src="${esc(b.cover_image)}" alt="" referrerpolicy="no-referrer" data-fallback="${letter}">`;
+  return `<div class="cover" aria-hidden="true">${letter}</div>`;
 }
 
 function cover2(b) {
-  if (b.cover_image) return `<img class="cover2" src="${esc(b.cover_image)}" alt="" referrerpolicy="no-referrer">`;
-  return `<div class="cover2" aria-hidden="true">${esc((b.title || '?').trim()[0])}</div>`;
+  const letter = esc((b.title || '?').trim()[0] || '?');
+  if (b.cover_image) return `<img class="cover2" src="${esc(b.cover_image)}" alt="" referrerpolicy="no-referrer" data-fallback="${letter}">`;
+  return `<div class="cover2" aria-hidden="true">${letter}</div>`;
 }
+
+// 표지 이미지가 깨지면 브라우저 기본 아이콘 대신 글자 플레이스홀더로 바꾼다 (img는 error가 버블링되지 않아 capture 사용)
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  if (img.tagName !== 'IMG' || !img.dataset.fallback) return;
+  const div = document.createElement('div');
+  div.className = img.className;
+  div.setAttribute('aria-hidden', 'true');
+  div.textContent = img.dataset.fallback;
+  img.replaceWith(div);
+}, true);
 
 // ───────────── 화면들 ─────────────
 const VIEWS = {
