@@ -1,9 +1,14 @@
 // 데이터베이스(Postgres, Neon) 스키마와 공통 헬퍼. (neon-vercel-migration 브랜치)
 // 원래 node:sqlite 기반이었으나, 여러 네트워크에서 서버에 접속 가능하도록
 // Neon(서버리스 Postgres) + Vercel 배포용으로 옮기는 중입니다.
-import { Pool } from '@neondatabase/serverless';
+import { Pool, types } from '@neondatabase/serverless';
 import { BUILTIN_HOLIDAYS } from './holidays.js';
 import { nowISO } from './clock.js';
+
+// Postgres는 COUNT(*)/bigint(OID 20)를 기본으로 문자열로 돌려준다(큰 수의 정밀도 손실 방지 목적).
+// 이 앱의 모든 집계는 안전한 정수 범위 안이므로, 일관되게 숫자로 받도록 전역 설정한다.
+// (이걸 빼먹으면 "10" >= "9" 같은 문자열 비교가 사전식으로 되어 로직이 미묘하게 깨진다.)
+types.setTypeParser(20, (v) => parseInt(v, 10));
 
 export const DEFAULT_SETTINGS = {
   loan_days: 3,              // 기본 대출 기간(수업일)
@@ -198,26 +203,24 @@ export async function resetForTests(db) {
 
 async function seed(db) {
   const now = nowISO();
-  for (const [k, v] of Object.entries(DEFAULT_SETTINGS)) {
-    await run(db, `INSERT INTO settings(key, value, updated_at, updated_by) VALUES (?, ?, ?, ?)
-      ON CONFLICT (key) DO NOTHING`, [k, String(v), now, 'system']);
-  }
+  // Neon은 네트워크 너머에 있어서 한 행씩 INSERT를 반복하면 왕복 시간이 쌓인다 — 한 번에 묶어서 보낸다.
+  const entries = Object.entries(DEFAULT_SETTINGS);
+  const values = entries.map((_, i) => `($${i * 4 + 1}, $${i * 4 + 2}, $${i * 4 + 3}, $${i * 4 + 4})`).join(', ');
+  const params = entries.flatMap(([k, v]) => [k, String(v), now, 'system']);
+  await db.query(`INSERT INTO settings(key, value, updated_at, updated_by) VALUES ${values} ON CONFLICT (key) DO NOTHING`, params);
   const has = (await get(db, 'SELECT COUNT(*) c FROM public_holidays')).c;
-  if (Number(has) === 0) {
-    for (const list of Object.values(BUILTIN_HOLIDAYS)) await importHolidays(db, list);
-  }
+  if (Number(has) === 0) await importHolidays(db, Object.values(BUILTIN_HOLIDAYS).flat());
 }
 
 // 공휴일 반영. 교사 일정(school_calendar)은 별도 테이블이므로 영향을 받지 않는다.
 export async function importHolidays(db, list) {
+  if (!list.length) return 0;
   const now = nowISO();
-  let n = 0;
-  for (const [date, name] of list) {
-    await run(db, `INSERT INTO public_holidays(date, name, updated_at) VALUES (?, ?, ?)
-      ON CONFLICT(date) DO UPDATE SET name=excluded.name, updated_at=excluded.updated_at`, [date, name, now]);
-    n++;
-  }
-  return n;
+  const values = list.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(', ');
+  const params = list.flatMap(([date, name]) => [date, name, now]);
+  await db.query(`INSERT INTO public_holidays(date, name, updated_at) VALUES ${values}
+    ON CONFLICT(date) DO UPDATE SET name=excluded.name, updated_at=excluded.updated_at`, params);
+  return list.length;
 }
 
 export async function getSettings(db) {
