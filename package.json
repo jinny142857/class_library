@@ -1,7 +1,7 @@
 {
   "name": "class-library",
   "version": "1.0.0",
-  "description": "양배추 책방 - 초등 학급문고 대출·반납·예약 웹앱 (외부 패키지 없음)",
+  "description": "양배추 책방 - 초등 학급문고 대출·반납·예약 웹앱 (neon-vercel-migration 브랜치: Postgres(Neon) + Vercel용)",
   "type": "module",
   "private": true,
   "engines": {
@@ -10,5 +10,8 @@
   "scripts": {
     "start": "node --disable-warning=ExperimentalWarning server.js",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
   }
 }

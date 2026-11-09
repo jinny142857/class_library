@@ -447,7 +447,7 @@ const PAGES = {
   },
 
   async settings() {
-    const [s, admins, backups] = await Promise.all([api('GET', '/api/admin/settings'), api('GET', '/api/admin/admins'), api('GET', '/api/admin/backups')]);
+    const [s, admins] = await Promise.all([api('GET', '/api/admin/settings'), api('GET', '/api/admin/admins')]);
     shell('settings');
     const meta = Object.fromEntries(s.meta.map(m => [m.key, m]));
     main.innerHTML = head('설정·백업') + `
@@ -461,12 +461,7 @@ const PAGES = {
       </div>
       <div class="grid2">
         <div class="card"><h2>백업·복원</h2>
-          <p style="margin-top:0">모든 데이터는 서버의 <code>data/library.db</code> 파일 하나에 저장돼요. 매일 자동 백업(최근 30개 보관)이 <code>data/backups</code>에 만들어져요.</p>
-          <div class="toolbar"><a class="btn primary" href="/api/admin/backup">지금 백업 파일 내려받기</a></div>
-          <details style="margin-top:14px"><summary>백업 파일로 복원하기</summary>
-            <p class="note warn">복원하면 지금 데이터가 백업 시점으로 돌아가요(현재 파일은 자동으로 따로 보관). 파일을 올린 뒤 서버를 다시 시작해야 적용돼요.</p>
-            <input type="file" accept=".db" data-act="restore"></details>
-          ${backups.length ? `<details style="margin-top:10px"><summary>서버에 있는 백업 ${backups.length}개</summary><ul style="font-size:13px">${backups.slice(0, 40).map(b => `<li>${esc(b.file)} <span class="muted">(${Math.round(b.size / 1024)}KB)</span></li>`).join('')}</ul></details>` : ''}
+          <p style="margin-top:0">데이터는 Neon(Postgres)에 저장돼요. 백업·특정 시점 복원·복제본 만들기는 Neon 콘솔의 자동 백업/브랜치 기능으로 할 수 있어요.</p>
         </div>
         <div class="card"><h2>관리자 계정</h2>
           <table>${admins.map(a => `<tr><td><b>${esc(a.display_name || a.username)}</b> <span class="muted">${esc(a.username)}</span></td><td class="muted">${fmtDateTime(a.created_at)}</td></tr>`).join('')}</table>
@@ -487,18 +482,6 @@ const PAGES = {
         const r = await api('PUT', '/api/admin/settings', Object.fromEntries(new FormData(e.target)));
         toast(Object.keys(r.changed).length ? '저장했어요. 새 대출부터 적용돼요.' : '바뀐 값이 없어요.');
         route();
-      } catch (err) { fail(err); }
-    });
-    main.querySelector('[data-act="restore"]').addEventListener('change', async (e) => {
-      const f = e.target.files[0];
-      if (!f) return;
-      const ok = await dialog('복원 확인', `<p><b>${esc(f.name)}</b> 파일로 복원할까요? 서버를 다시 시작하면 적용돼요.</p>`, [{ label: '취소', value: null }, { label: '복원 파일 올리기', value: 'ok', danger: true }]);
-      if (!ok) { e.target.value = ''; return; }
-      try {
-        const res = await fetch('/api/admin/restore', { method: 'POST', body: f, headers: { 'Content-Type': 'application/octet-stream' } });
-        const d = await res.json();
-        if (!res.ok) throw new ApiError(res.status, d.error);
-        toast(d.message);
       } catch (err) { fail(err); }
     });
     main.querySelector('[data-act="add-admin"]').addEventListener('click', async () => {

@@ -1,5 +1,7 @@
-// 데이터베이스(SQLite, Node 내장 node:sqlite) 스키마와 공통 헬퍼.
-import { DatabaseSync } from 'node:sqlite';
+// 데이터베이스(Postgres, Neon) 스키마와 공통 헬퍼. (neon-vercel-migration 브랜치)
+// 원래 node:sqlite 기반이었으나, 여러 네트워크에서 서버에 접속 가능하도록
+// Neon(서버리스 Postgres) + Vercel 배포용으로 옮기는 중입니다.
+import { Pool } from '@neondatabase/serverless';
 import { BUILTIN_HOLIDAYS } from './holidays.js';
 import { nowISO } from './clock.js';
 
@@ -15,10 +17,8 @@ export const DEFAULT_SETTINGS = {
 };
 
 const SCHEMA = `
-PRAGMA foreign_keys = ON;
-
 CREATE TABLE IF NOT EXISTS students (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   number INTEGER,
   name TEXT NOT NULL,
   qr_token TEXT NOT NULL UNIQUE,
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS students (
 );
 
 CREATE TABLE IF NOT EXISTS books (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
   author TEXT,
   publisher TEXT,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS books (
 CREATE INDEX IF NOT EXISTS idx_books_isbn ON books(isbn);
 
 CREATE TABLE IF NOT EXISTS copies (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   book_id INTEGER NOT NULL REFERENCES books(id),
   copy_code TEXT NOT NULL UNIQUE,
   qr_token TEXT NOT NULL UNIQUE,
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS copies (
 CREATE INDEX IF NOT EXISTS idx_copies_book ON copies(book_id);
 
 CREATE TABLE IF NOT EXISTS loans (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   student_id INTEGER NOT NULL REFERENCES students(id),
   copy_id INTEGER NOT NULL REFERENCES copies(id),
   loaned_at TEXT NOT NULL,
@@ -78,7 +78,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_loans_active_copy ON loans(copy_id) WHERE s
 CREATE INDEX IF NOT EXISTS idx_loans_student ON loans(student_id, status);
 
 CREATE TABLE IF NOT EXISTS reservations (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   student_id INTEGER NOT NULL REFERENCES students(id),
   book_id INTEGER NOT NULL REFERENCES books(id),
   reserved_at TEXT NOT NULL,
@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 
 CREATE TABLE IF NOT EXISTS admins (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   username TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   display_name TEXT,
@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 -- 학생이 (빌려 본 적 있는) 책에 남기는 별점·한줄평
 CREATE TABLE IF NOT EXISTS reviews (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   book_id INTEGER NOT NULL REFERENCES books(id),
   student_id INTEGER NOT NULL REFERENCES students(id),
   rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
@@ -148,7 +148,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_reviews_student_book ON reviews(student_id,
 CREATE INDEX IF NOT EXISTS idx_reviews_book ON reviews(book_id);
 
 CREATE TABLE IF NOT EXISTS audit_logs (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   actor_type TEXT NOT NULL CHECK (actor_type IN ('student','admin','system')),
   actor_id INTEGER,
   action TEXT NOT NULL,
@@ -160,59 +160,94 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at);
 `;
 
-export function openDb(file = ':memory:') {
-  const db = new DatabaseSync(file);
-  db.exec('PRAGMA journal_mode = WAL;');
-  db.exec('PRAGMA busy_timeout = 5000;');
-  db.exec(SCHEMA);
-  seed(db);
-  return db;
+// ? 플레이스홀더를 Postgres의 $1,$2... 로 바꿔서, SQLite 시절 쿼리 문자열을 거의 그대로 쓸 수 있게 한다.
+function toPgSql(sql) {
+  let i = 0;
+  return sql.replace(/\?/g, () => `$${++i}`);
 }
 
-function seed(db) {
+// conn 은 Pool(트랜잭션 밖) 또는 tx() 안에서 체크아웃한 Client(트랜잭션 안) 둘 다 가능 — 둘 다 .query()를 지원한다.
+export async function get(conn, sql, params = []) {
+  const r = await conn.query(toPgSql(sql), params);
+  return r.rows[0];
+}
+export async function all(conn, sql, params = []) {
+  const r = await conn.query(toPgSql(sql), params);
+  return r.rows;
+}
+export async function run(conn, sql, params = []) {
+  const r = await conn.query(toPgSql(sql), params);
+  return { changes: r.rowCount, lastInsertRowid: r.rows[0]?.id };
+}
+
+export async function openDb(connectionString = process.env.DATABASE_URL) {
+  if (!connectionString) throw new Error('DATABASE_URL 환경변수가 설정되지 않았습니다. (Neon 연결 문자열)');
+  const pool = new Pool({ connectionString });
+  await pool.query(SCHEMA);
+  await seed(pool);
+  return pool;
+}
+
+// 테스트 전용: 모든 테이블을 비우고 기본값(설정·공휴일)을 다시 심는다.
+// 반드시 별도의 테스트용 DB(TEST_DATABASE_URL)에서만 쓸 것 — 운영 데이터가 있는 DB에 쓰면 전부 지워진다.
+export async function resetForTests(db) {
+  await db.query(`TRUNCATE students, books, copies, loans, reservations, reviews, audit_logs,
+    sessions, school_calendar, public_holidays, settings, admins RESTART IDENTITY CASCADE`);
+  await seed(db);
+}
+
+async function seed(db) {
   const now = nowISO();
-  const ins = db.prepare('INSERT OR IGNORE INTO settings(key, value, updated_at, updated_by) VALUES (?, ?, ?, ?)');
-  for (const [k, v] of Object.entries(DEFAULT_SETTINGS)) ins.run(k, String(v), now, 'system');
-  const has = db.prepare('SELECT COUNT(*) c FROM public_holidays').get().c;
-  if (!has) {
-    for (const list of Object.values(BUILTIN_HOLIDAYS)) importHolidays(db, list);
+  for (const [k, v] of Object.entries(DEFAULT_SETTINGS)) {
+    await run(db, `INSERT INTO settings(key, value, updated_at, updated_by) VALUES (?, ?, ?, ?)
+      ON CONFLICT (key) DO NOTHING`, [k, String(v), now, 'system']);
+  }
+  const has = (await get(db, 'SELECT COUNT(*) c FROM public_holidays')).c;
+  if (Number(has) === 0) {
+    for (const list of Object.values(BUILTIN_HOLIDAYS)) await importHolidays(db, list);
   }
 }
 
 // 공휴일 반영. 교사 일정(school_calendar)은 별도 테이블이므로 영향을 받지 않는다.
-export function importHolidays(db, list) {
+export async function importHolidays(db, list) {
   const now = nowISO();
-  const stmt = db.prepare(`INSERT INTO public_holidays(date, name, updated_at) VALUES (?, ?, ?)
-    ON CONFLICT(date) DO UPDATE SET name=excluded.name, updated_at=excluded.updated_at`);
   let n = 0;
-  for (const [date, name] of list) { stmt.run(date, name, now); n++; }
+  for (const [date, name] of list) {
+    await run(db, `INSERT INTO public_holidays(date, name, updated_at) VALUES (?, ?, ?)
+      ON CONFLICT(date) DO UPDATE SET name=excluded.name, updated_at=excluded.updated_at`, [date, name, now]);
+    n++;
+  }
   return n;
 }
 
-export function getSettings(db) {
+export async function getSettings(db) {
   const out = { ...DEFAULT_SETTINGS };
-  for (const r of db.prepare('SELECT key, value FROM settings').all()) {
+  for (const r of await all(db, 'SELECT key, value FROM settings')) {
     if (r.key in DEFAULT_SETTINGS) out[r.key] = Number(r.value);
   }
   return out;
 }
 
-// 트랜잭션: BEGIN IMMEDIATE 로 쓰기 잠금을 먼저 잡아 동시 요청을 직렬화한다.
-export function tx(db, fn) {
-  db.exec('BEGIN IMMEDIATE');
+// 트랜잭션: 같은 커넥션(client)을 체크아웃해 BEGIN~COMMIT 사이에 모든 쿼리를 실행한다.
+// fn(client) 형태로 호출하므로, 트랜잭션 안에서는 this.db 대신 전달받은 client를 써야 한다.
+export async function tx(pool, fn) {
+  const client = await pool.connect();
   try {
-    const r = fn();
-    db.exec('COMMIT');
+    await client.query('BEGIN');
+    const r = await fn(client);
+    await client.query('COMMIT');
     return r;
   } catch (e) {
-    try { db.exec('ROLLBACK'); } catch {}
+    try { await client.query('ROLLBACK'); } catch {}
     throw e;
+  } finally {
+    client.release();
   }
 }
 
-export function audit(db, actor, action, targetType, targetId, details) {
-  db.prepare(`INSERT INTO audit_logs(actor_type, actor_id, action, target_type, target_id, details, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)`).run(
+export async function audit(db, actor, action, targetType, targetId, details) {
+  await run(db, `INSERT INTO audit_logs(actor_type, actor_id, action, target_type, target_id, details, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)`, [
     actor?.type || 'system', actor?.id ?? null, action, targetType ?? null, targetId ?? null,
-    details == null ? null : JSON.stringify(details), nowISO());
+    details == null ? null : JSON.stringify(details), nowISO()]);
 }

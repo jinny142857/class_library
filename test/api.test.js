@@ -2,13 +2,11 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
+import { openDb, resetForTests } from '../src/db.js';
 
 const PORT = 3900 + Math.floor(Math.random() * 90);
 const BASE = `http://localhost:${PORT}`;
-const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'cl-test-'));
+const TEST_DB_URL = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL;
 let proc;
 
 async function call(method, p, body, cookie) {
@@ -24,8 +22,13 @@ async function call(method, p, body, cookie) {
 }
 
 before(async () => {
+  // 서버를 띄우기 전에 테스트 DB를 비워 둔다 (Postgres는 SQLite ':memory:'처럼 매번 새로 만들 수 없다).
+  const setupDb = await openDb(TEST_DB_URL);
+  await resetForTests(setupDb);
+  await setupDb.end();
+
   proc = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', 'server.js'], {
-    env: { ...process.env, PORT: String(PORT), DATA_DIR: DIR, FAKE_TODAY: '2026-11-04' }, stdio: 'ignore',
+    env: { ...process.env, PORT: String(PORT), DATABASE_URL: TEST_DB_URL, FAKE_TODAY: '2026-11-04' }, stdio: 'ignore',
   });
   for (let i = 0; i < 50; i++) {
     try { await fetch(BASE + '/api/config'); return; } catch { await new Promise(r => setTimeout(r, 100)); }
@@ -38,10 +41,6 @@ after(async () => {
       proc.once('exit', resolve);
       proc.kill();
     });
-  }
-  for (let i = 0; i < 20; i++) {
-    try { fs.rmSync(DIR, { recursive: true, force: true }); return; }
-    catch (err) { if (err.code !== 'EPERM' && err.code !== 'EBUSY') throw err; await new Promise((r) => setTimeout(r, 100)); }
   }
 });
 
@@ -98,8 +97,4 @@ test('API 전체 흐름: 동시 대출 1명만 성공, 권한 분리', async () 
   const loanId = (await call('GET', '/api/admin/loans?status=active', null, A)).data[0].id;
   assert.equal((await call('POST', `/api/admin/loans/${loanId}/return`, {}, A)).status, 400);
   assert.equal((await call('POST', `/api/admin/loans/${loanId}/return`, { reason: '테스트' }, A)).status, 200);
-  // 백업 다운로드는 SQLite 파일
-  const bk = await fetch(BASE + '/api/admin/backup', { headers: { Cookie: A } });
-  const buf = Buffer.from(await bk.arrayBuffer());
-  assert.equal(buf.subarray(0, 15).toString(), 'SQLite format 3');
 });
