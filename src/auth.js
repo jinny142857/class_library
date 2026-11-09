@@ -2,7 +2,7 @@
 // (neon-vercel-migration 브랜치: Sessions/createAdmin이 async로 바뀜. RateLimiter는 메모리 기반이라 그대로.)
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { nowISO } from './clock.js';
-import { getSettings, audit, get, run } from './db.js';
+import { getSettings, audit, get, run, tx } from './db.js';
 
 const ADMIN_IDLE_SECONDS = 4 * 60 * 60;
 
@@ -26,8 +26,17 @@ export class Sessions {
   async create(role, subjectId) {
     const token = randomBytes(32).toString('base64url');
     const now = nowISO();
-    if (role === 'student') await run(this.db, "DELETE FROM sessions WHERE role='student'"); // 공용 기기: 학생 세션은 한 번에 하나
-    await run(this.db, 'INSERT INTO sessions(token, role, subject_id, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?)', [token, role, subjectId, now, now]);
+    if (role === 'student') {
+      // 공용 기기: 학생 세션은 한 번에 하나. Postgres는 요청이 동시에 섞여 들어올 수 있으므로
+      // (SQLite 때는 단일 스레드라 자동으로 직렬화됐었다) advisory lock으로 DELETE+INSERT를 직렬화한다.
+      await tx(this.db, async (c) => {
+        await c.query("SELECT pg_advisory_xact_lock(hashtext('student_session'))");
+        await run(c, "DELETE FROM sessions WHERE role='student'");
+        await run(c, 'INSERT INTO sessions(token, role, subject_id, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?)', [token, role, subjectId, now, now]);
+      });
+    } else {
+      await run(this.db, 'INSERT INTO sessions(token, role, subject_id, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?)', [token, role, subjectId, now, now]);
+    }
     return token;
   }
 

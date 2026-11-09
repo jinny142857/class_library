@@ -73,9 +73,13 @@ test('API 전체 흐름: 동시 대출 1명만 성공, 권한 분리', async () 
   const ok = results.filter(r => r.status === 200);
   assert.equal(ok.length, 1, '정확히 한 명만 대출 성공');
   assert.ok(results.filter(r => r.status === 409).length === 7);
+  const borrowerIdx = results.findIndex(r => r.status === 200);
 
   // 학생은 관리자 API 접근 불가
-  const sc = valid[0];
+  // (아래 "남의 책 반납" 검증을 위해, 실제 대출자가 아닌 학생으로 다시 로그인해 확정적인 세션을 만든다.
+  //  Neon은 요청 처리 순서가 보장되지 않아, 위 로그인 경쟁에서 남는 세션이 우연히 대출자 본인일 수 있다.)
+  const notBorrower = students[(borrowerIdx + 1) % students.length];
+  const sc = (await call('POST', '/api/student/login', { code: notBorrower.qr_token })).cookie;
   assert.equal((await call('GET', '/api/admin/students', null, sc)).status, 401);
   assert.equal((await call('GET', '/api/admin/dashboard', null, sc)).status, 401);
   // 관리자 쿠키로 학생 API 불가 (역할 분리)
@@ -85,11 +89,8 @@ test('API 전체 흐름: 동시 대출 1명만 성공, 권한 분리', async () 
   assert.equal(books.status, 200);
   assert.ok(!JSON.stringify(books.data).includes('학생'));
   // 학생 반납: 남의 책 반납 불가
-  const borrower = ok[0];
-  void borrower;
   const ret = await call('POST', '/api/student/return', { code: copy.qr_token }, sc);
-  const me = (await call('GET', '/api/student/me', null, sc)).data;
-  if (me.loans.length === 0) assert.equal(ret.data.error.code, 'NOT_YOURS');
+  assert.equal(ret.data.error.code, 'NOT_YOURS');
   // 교차 출처 쓰기 차단
   const csrf = await fetch(BASE + '/api/admin/students', { method: 'POST', headers: { Origin: 'http://evil.example', 'Content-Type': 'application/json', Cookie: A }, body: '{"name":"x"}' });
   assert.equal(csrf.status, 403);
