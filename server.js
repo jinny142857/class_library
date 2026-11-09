@@ -73,7 +73,8 @@ function parseCookies(req) {
 }
 
 function isSecure(req) {
-  return !!req.socket.encrypted || req.headers['x-forwarded-proto'] === 'https';
+  // Vercel 서버리스 런타임은 req.socket을 노출하지 않는다(null) — 거기선 x-forwarded-proto로만 판단해야 한다.
+  return !!req.socket?.encrypted || req.headers['x-forwarded-proto'] === 'https';
 }
 
 function cookie(req, name, value, maxAge) {
@@ -95,7 +96,7 @@ async function readBody(req, limit = 2 * 1024 * 1024, raw = false) {
 }
 
 function ip(req) {
-  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || '';
+  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || '';
 }
 
 // ───────────── 라우터 ─────────────
